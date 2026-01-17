@@ -1,0 +1,19 @@
+# Makefile.win32 for serial_keyboard
+# Build for Win32 using MinGW or similar gcc toolchain
+
+CC = gcc
+CFLAGS = -Wall -O2 -D_WIN32
+LDFLAGS = -luser32
+
+TARGET = serial_keyboard.exe
+SRC = serial_keyboard.c
+
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRC) $(LDFLAGS)
+
+clean:
+	del /Q $(TARGET) 2>NUL || echo "Nothing to clean"
+
+.PHONY: all clean

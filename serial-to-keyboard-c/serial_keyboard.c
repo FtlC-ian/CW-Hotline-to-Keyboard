@@ -323,7 +323,7 @@ void processCommand(char *cmd) {
 void handleLine(char *line) {
     if (strlen(line) == 0) return;
     
-    if (!quietMode) printf("\n📥 Raw: \"%s\" → ", line);
+    if (!quietMode) printf("\n>> Raw: \"%s\" -> ", line);
     
     char *cursor = line;
     // Robust search for SpaceMark tokens
@@ -351,17 +351,17 @@ void handleLine(char *line) {
 #define CONFIG_WPM_INDEX 12
 
 void automatedConfig(SERIAL_HANDLE h, int targetSetting, const char *newValue) {
-    printf("🔧 Automated CW Hotline Configuration\n");
+    printf("[*] Automated CW Hotline Configuration\n");
     printf("   Changing setting #%d to: %s\n\n", targetSetting, newValue);
     
     // Send entry command
-    printf("📤 Sending *** ...\n");
+    printf(">>> Sending *** ...\n");
     os_serial_write(h, "***\r", 4);
     
     // Wait for "Settings" banner
     char buffer[1024];
     int gotResponse = 0;
-    printf("⏳ Waiting for device response...\n");
+    printf("... Waiting for device response...\n");
     for (int i=0; i<40; i++) { // 4s timeout
         sleep_ms(100);
         int n = os_serial_read(h, buffer, sizeof(buffer)-1);
@@ -373,7 +373,7 @@ void automatedConfig(SERIAL_HANDLE h, int targetSetting, const char *newValue) {
         if (gotResponse) break;
     }
     
-    printf("\n📝 Going through %d settings...\n", CONFIG_TOTAL_SETTINGS);
+    printf("\n[+] Going through %d settings...\n", CONFIG_TOTAL_SETTINGS);
     
     for (int setting=1; setting<=CONFIG_TOTAL_SETTINGS; setting++) {
         printf("   [%d/%d] Waiting for prompt... ", setting, CONFIG_TOTAL_SETTINGS);
@@ -397,7 +397,7 @@ void automatedConfig(SERIAL_HANDLE h, int targetSetting, const char *newValue) {
         for(int k=0; lineBuf[k]; k++) if(lineBuf[k]<32 && lineBuf[k]!='\n' && lineBuf[k]!='\r') lineBuf[k]='.';
         printf("%s", lineBuf);
         
-        if (!sawColon) printf("\n   ⚠️  Timeout waiting for prompt!\n");
+        if (!sawColon) printf("\n   [!] Timeout waiting for prompt!\n");
         
         if (setting == targetSetting) {
             printf("   >>> SETTING to: %s\n", newValue);
@@ -410,11 +410,11 @@ void automatedConfig(SERIAL_HANDLE h, int targetSetting, const char *newValue) {
         sleep_ms(200);
     }
     
-    printf("\n✅ Configuration complete! Power cycle device.\n");
+    printf("\n[OK] Configuration complete! Power cycle device.\n");
 }
 
 void enterConfigMode(SERIAL_HANDLE h) {
-    printf("🔧 Interactive Mode (Press 'exit' + Enter to quit)\n");
+    printf("[*] Interactive Mode (Press 'exit' + Enter to quit)\n");
     os_serial_write(h, "***\r", 4);
     
     while(1) {
@@ -476,7 +476,7 @@ int main(int argc, char *argv[]) {
 
     init_keyboard();
     
-    if (!quietMode) printf("🔌 CW Hotline Universal (%s @ %d)\n", port, baud);
+    if (!quietMode) printf("[*] CW Hotline Universal (%s @ %d)\n", port, baud);
 
     SERIAL_HANDLE h = os_open_serial(port, baud);
     if (h == INVALID_SERIAL_HANDLE) return 1;
@@ -494,7 +494,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    if (!quietMode) printf("🎧 Listening...\n");
+    if (!quietMode) printf("[+] Listening...\n");
 
     // Main Loop with Buffering
     static char lineBuf[4096];
