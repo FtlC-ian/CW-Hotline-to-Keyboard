@@ -8,7 +8,7 @@ It is designed to work with web-based CW trainers like [Keyer's Journey](https:/
 
 **Don't want to build from source?** Download the latest pre-compiled executable:
 
-👉 **[Download Latest Release](https://github.com/YOUR_USERNAME/CW-Hotline-to-Keyboard/releases/latest)**
+👉 **[Download Latest Release](https://github.com/FtlC-ian/CW-Hotline-to-Keyboard/releases/latest)**
 
 - **Windows**: `serial_keyboard.exe` 
 - **macOS**: `serial_keyboard`
