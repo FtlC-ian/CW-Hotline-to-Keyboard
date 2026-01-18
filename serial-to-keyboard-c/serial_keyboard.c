@@ -331,7 +331,7 @@ char* processCommandWithComma(char *firstComma) {
 void handleLine(char *line) {
     if (strlen(line) == 0) return;
     
-    if (!quietMode) printf("\n📥 Raw: \"%s\" → ", line);
+    if (!quietMode) printf("\n>> Raw: \"%s\" -> ", line);
     
     char *cursor = line;
     // Scan for 'S' or 's', then find the next comma pattern
