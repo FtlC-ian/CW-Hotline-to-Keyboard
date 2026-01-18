@@ -240,28 +240,34 @@ int isClose(int val, int target) {
     return abs(val - target) <= TIMING_TOLERANCE;
 }
 
-void processCommand(char *cmd) {
-    // Robust parsing (from Step 284/287)
-    char *firstComma = strchr(cmd, ',');
-    if (!firstComma) return;
+// Process a command starting at the first comma (e.g. ",100,200")
+// Returns pointer to end of command (digits), or NULL if invalid
+char* processCommandWithComma(char *firstComma) {
     char *secondComma = strchr(firstComma + 1, ',');
-    if (!secondComma) return;
+    if (!secondComma) return NULL;
     
     // Parse length cleanly
     char lengthStr[32] = {0};
     char *src = secondComma + 1;
     char *dst = lengthStr;
+    char *endOfDigits = src;
+    
     while (*src && isdigit((unsigned char)*src) && dst - lengthStr < 31) {
-        *dst++ = *src++;
+        *dst++ = *src;
+        endOfDigits = src; // Keep track of last digit
+        src++;
     }
     
     int charLength = atoi(lengthStr);
-    if (charLength == 0) return;
+    if (charLength == 0) return NULL;
+    
+    // Reuse existing logic (copied directly from processCommand)
     
     // Glitch Filter
     if (charLength < MIN_PULSE_LENGTH) {
         if (debugMode) printf("[ignored noise: %d] ", charLength);
-        return;
+        // Valid structure but ignored value. Return valid end pointer.
+        return endOfDigits;
     }
     
     if (!quietMode) printf("[%dms] ", charLength);
@@ -271,7 +277,7 @@ void processCommand(char *cmd) {
         dotTiming = charLength;
         if (!quietMode) printf("[learned initial=%d] ", dotTiming);
         press_key(0); // Dot
-        return;
+        return endOfDigits;
     }
     
     if (dashTiming == -1) {
@@ -287,7 +293,7 @@ void processCommand(char *cmd) {
             if (!quietMode) printf("[learned DOT=%d DASH=%d] ", dotTiming, dashTiming);
             if (charLength == dotTiming) press_key(0); else press_key(1);
         }
-        return;
+        return endOfDigits;
     }
     
     // Self-Correction
@@ -296,14 +302,14 @@ void processCommand(char *cmd) {
         dashTiming = dotTiming;
         dotTiming = charLength;
         press_key(0);
-        return;
+        return endOfDigits;
     }
     
     if (dashTiming > dotTiming * 6 && charLength > dotTiming * 2 && charLength < dashTiming) {
         if (!quietMode) printf("[CORRECTION: Fixed huge Dash: %d] ", charLength);
         dashTiming = charLength;
         press_key(1);
-        return;
+        return endOfDigits;
     }
 
     // Classify
@@ -318,28 +324,41 @@ void processCommand(char *cmd) {
         int dashDiff = abs(charLength - dashTiming);
         if (dotDiff < dashDiff) press_key(0); else press_key(1);
     }
+    
+    return endOfDigits;
 }
 
 void handleLine(char *line) {
     if (strlen(line) == 0) return;
     
-    if (!quietMode) printf("\n>> Raw: \"%s\" -> ", line);
+    if (!quietMode) printf("\n📥 Raw: \"%s\" → ", line);
     
     char *cursor = line;
-    // Robust search for SpaceMark tokens
-    while (1) {
-        // strncasecmp wrap
-        char *found = NULL;
-        for (char *p = cursor; *p; p++) {
-            if (strncasecmp(p, "SpaceMark", 9) == 0) {
-                found = p;
-                break;
+    // Scan for 'S' or 's', then find the next comma pattern
+    while ((cursor = strpbrk(cursor, "Ss"))) {
+        // We found an 'S'. Now look for the next comma
+        char *comma = strchr(cursor, ',');
+        
+        // If no comma, or comma is too far (sanity check: >20 chars away?), break
+        if (!comma) break;
+        if (comma - cursor > 20) {
+            cursor++; // Too far, this 'S' isn't a prefix
+            continue;
+        }
+
+        // Check pattern from comma: ,digits,digits
+        if (isdigit((unsigned char)*(comma+1))) {
+            char *secondComma = strchr(comma + 1, ',');
+            if (secondComma && isdigit((unsigned char)*(secondComma+1))) {
+                // Found valid pattern associated with this 'S'
+                char *end = processCommandWithComma(comma);
+                if (end) {
+                    cursor = end;
+                    continue;
+                }
             }
         }
-        if (!found) break;
-        
-        processCommand(found);
-        cursor = found + 9;
+        cursor++;
     }
     
     if (!quietMode) { printf("\n"); fflush(stdout); }
